@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
@@ -98,6 +100,65 @@ const textFieldSx = {
 };
 
 export default function Register() {
+    const router = useRouter();
+    const [formData, setFormData] = useState({
+        username: '',
+        email: '',
+        password: '',
+        age: ''
+    });
+    const [profilePicture, setProfilePicture] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setProfilePicture(file);
+            setPreviewUrl(URL.createObjectURL(file));
+
+            // Cleanup previous URL to prevent memory leaks
+            return () => URL.revokeObjectURL(previewUrl || "");
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+        setIsLoading(true);
+
+        try {
+            const payload = new FormData();
+            payload.append('username', formData.username);
+            payload.append('email', formData.email);
+            payload.append('password', formData.password);
+            if (formData.age) payload.append('age', formData.age);
+            if (profilePicture) payload.append('profile_picture', profilePicture);
+
+            const res = await fetch('http://localhost:8000/register', {
+                method: 'POST',
+                body: payload,
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.detail || 'Registration failed');
+            }
+
+            // Successfully registered, go to login
+            router.push('/Login');
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 sm:p-8 relative overflow-hidden">
             <BackgroundOrbs />
@@ -119,33 +180,59 @@ export default function Register() {
 
                 <Box
                     component="form"
+                    onSubmit={handleSubmit}
                     className="w-full flex flex-col gap-4"
                     noValidate
                     autoComplete="off"
                 >
+                    {error && (
+                        <motion.div variants={itemVariants} className="w-full bg-red-500/10 border border-red-500/50 rounded-lg p-3 text-center">
+                            <Typography variant="body2" className="text-red-400 font-medium">
+                                {error}
+                            </Typography>
+                        </motion.div>
+                    )}
                     {/* Photo Upload Placeholder */}
                     <motion.div variants={itemVariants} className="w-full flex justify-center mb-2">
-                        <motion.div
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="w-24 h-24 rounded-full border-2 border-dashed border-indigo-300/50 bg-white/5 flex flex-col items-center justify-center cursor-pointer hover:bg-white/10 hover:border-indigo-400 transition-colors"
-                        >
-                            <svg className="w-8 h-8 text-indigo-300 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            <span className="text-[10px] text-indigo-200 font-medium">Add Photo</span>
-                        </motion.div>
+                        <label className="cursor-pointer">
+                            <motion.div
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className="w-24 h-24 rounded-full border-2 border-dashed border-indigo-300/50 bg-white/5 flex flex-col items-center justify-center overflow-hidden hover:bg-white/10 hover:border-indigo-400 transition-colors"
+                            >
+                                {previewUrl ? (
+                                    <img src={previewUrl} alt="Profile preview" className="w-full h-full object-cover" />
+                                ) : (
+                                    <>
+                                        <svg className="w-8 h-8 text-indigo-300 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
+                                        <span className="text-[10px] text-indigo-200 font-medium">Add Photo</span>
+                                    </>
+                                )}
+                            </motion.div>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handleFileChange}
+                            />
+                        </label>
                     </motion.div>
 
                     <motion.div variants={itemVariants}>
                         <TextField
                             fullWidth
                             label="Username"
+                            name="username"
+                            value={formData.username}
+                            onChange={handleChange}
                             variant="outlined"
                             size="medium"
                             className="bg-white/5 rounded-xl"
                             sx={textFieldSx}
+                            required
                         />
                     </motion.div>
 
@@ -153,11 +240,15 @@ export default function Register() {
                         <TextField
                             fullWidth
                             label="Email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleChange}
                             type="email"
                             variant="outlined"
                             size="medium"
                             className="bg-white/5 rounded-xl"
                             sx={textFieldSx}
+                            required
                         />
                     </motion.div>
 
@@ -166,11 +257,15 @@ export default function Register() {
                             <TextField
                                 fullWidth
                                 label="Password"
+                                name="password"
+                                value={formData.password}
+                                onChange={handleChange}
                                 type="password"
                                 variant="outlined"
                                 size="medium"
                                 className="bg-white/5 rounded-xl"
                                 sx={textFieldSx}
+                                required
                             />
                         </motion.div>
 
@@ -178,6 +273,9 @@ export default function Register() {
                             <TextField
                                 fullWidth
                                 label="Age"
+                                name="age"
+                                value={formData.age}
+                                onChange={handleChange}
                                 type="number"
                                 variant="outlined"
                                 size="medium"
@@ -190,12 +288,13 @@ export default function Register() {
 
                     <motion.div variants={itemVariants} className="w-full mt-4">
                         <motion.button
-                            type="button"
-                            whileHover={{ scale: 1.02, boxShadow: "0 10px 25px -5px rgba(99, 102, 241, 0.5)" }}
-                            whileTap={{ scale: 0.98, boxShadow: "0 5px 15px -5px rgba(99, 102, 241, 0.4)" }}
-                            className="w-full bg-linear-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white font-bold py-3.5 rounded-xl shadow-[0_8px_16px_-6px_rgba(99,102,241,0.4)] transition-colors duration-300 text-lg cursor-pointer"
+                            type="submit"
+                            disabled={isLoading}
+                            whileHover={!isLoading ? { scale: 1.02, boxShadow: "0 10px 25px -5px rgba(99, 102, 241, 0.5)" } : {}}
+                            whileTap={!isLoading ? { scale: 0.98, boxShadow: "0 5px 15px -5px rgba(99, 102, 241, 0.4)" } : {}}
+                            className={`w-full bg-linear-to-r from-indigo-500 to-purple-600 ${isLoading ? 'opacity-70 cursor-not-allowed' : 'hover:from-indigo-400 hover:to-purple-500 cursor-pointer'} text-white font-bold py-3.5 rounded-xl shadow-[0_8px_16px_-6px_rgba(99,102,241,0.4)] transition-colors duration-300 text-lg`}
                         >
-                            Create Account
+                            {isLoading ? 'Creating Account...' : 'Create Account'}
                         </motion.button>
                     </motion.div>
                 </Box>

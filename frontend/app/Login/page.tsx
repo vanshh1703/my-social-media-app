@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
@@ -77,6 +79,51 @@ const BackgroundOrbs = () => (
 );
 
 export default function Login() {
+    const router = useRouter();
+    const [formData, setFormData] = useState({
+        username: '',
+        password: '',
+    });
+    const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+        setIsLoading(true);
+
+        try {
+            const res = await fetch('http://localhost:8000/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: formData.username,
+                    password: formData.password
+                }),
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.detail || 'Login failed');
+            }
+
+            const data = await res.json();
+            // Save JWT token
+            localStorage.setItem('token', data.access_token);
+
+            // Successfully logged in, go to home page
+            router.push('/');
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 sm:p-8 relative overflow-hidden">
             <BackgroundOrbs />
@@ -98,14 +145,25 @@ export default function Login() {
 
                 <Box
                     component="form"
+                    onSubmit={handleSubmit}
                     className="w-full flex flex-col gap-5"
                     noValidate
                     autoComplete="off"
                 >
+                    {error && (
+                        <motion.div variants={itemVariants} className="w-full bg-red-500/10 border border-red-500/50 rounded-lg p-3 text-center">
+                            <Typography variant="body2" className="text-red-400 font-medium">
+                                {error}
+                            </Typography>
+                        </motion.div>
+                    )}
                     <motion.div variants={itemVariants}>
                         <TextField
                             fullWidth
                             label="Username or Email"
+                            name="username"
+                            value={formData.username}
+                            onChange={handleChange}
                             variant="outlined"
                             size="medium"
                             className="bg-white/5 rounded-xl"
@@ -128,6 +186,7 @@ export default function Login() {
                                     color: '#818cf8',
                                 }
                             }}
+                            required
                         />
                     </motion.div>
 
@@ -135,6 +194,9 @@ export default function Login() {
                         <TextField
                             fullWidth
                             label="Password"
+                            name="password"
+                            value={formData.password}
+                            onChange={handleChange}
                             type="password"
                             variant="outlined"
                             size="medium"
@@ -158,6 +220,7 @@ export default function Login() {
                                     color: '#818cf8',
                                 }
                             }}
+                            required
                         />
                     </motion.div>
 
@@ -169,12 +232,13 @@ export default function Login() {
 
                     <motion.div variants={itemVariants} className="w-full">
                         <motion.button
-                            type="button"
-                            whileHover={{ scale: 1.02, boxShadow: "0 10px 25px -5px rgba(99, 102, 241, 0.5)" }}
-                            whileTap={{ scale: 0.98, boxShadow: "0 5px 15px -5px rgba(99, 102, 241, 0.4)" }}
-                            className="w-full bg-linear-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white font-bold py-3.5 rounded-xl shadow-[0_8px_16px_-6px_rgba(99,102,241,0.4)] transition-colors duration-300 text-lg cursor-pointer"
+                            type="submit"
+                            disabled={isLoading}
+                            whileHover={!isLoading ? { scale: 1.02, boxShadow: "0 10px 25px -5px rgba(99, 102, 241, 0.5)" } : {}}
+                            whileTap={!isLoading ? { scale: 0.98, boxShadow: "0 5px 15px -5px rgba(99, 102, 241, 0.4)" } : {}}
+                            className={`w-full bg-linear-to-r from-indigo-500 to-purple-600 ${isLoading ? 'opacity-70 cursor-not-allowed' : 'hover:from-indigo-400 hover:to-purple-500 cursor-pointer'} text-white font-bold py-3.5 rounded-xl shadow-[0_8px_16px_-6px_rgba(99,102,241,0.4)] transition-colors duration-300 text-lg`}
                         >
-                            Sign In
+                            {isLoading ? 'Signing In...' : 'Sign In'}
                         </motion.button>
                     </motion.div>
                 </Box>
@@ -188,7 +252,7 @@ export default function Login() {
                     </Link>
                 </motion.div>
             </motion.div>
-           
+
         </div>
 
     );

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import CreatePost from "../components/CreatePost";
 import PostItem, { PostType } from "../components/PostItem";
 import { Bell, Search, Menu, Home as HomeIcon, User as UserIcon } from "lucide-react";
@@ -42,7 +43,21 @@ const INITIAL_POSTS: PostType[] = [
 ];
 
 export default function Home() {
+  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [posts, setPosts] = useState<PostType[]>(INITIAL_POSTS);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/Login');
+    } else {
+      setIsAuthenticated(true);
+    }
+  }, [router]);
+
+  if (!isAuthenticated) return null; // Avoid flashing the home page before redirect
+
 
   const handlePostCreated = (content: string, mediaFile?: File | null) => {
     let mediaUrl = undefined;
