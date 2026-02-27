@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Heart, MessageCircle, Share2, MoreHorizontal } from 'lucide-react';
