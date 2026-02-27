@@ -23,9 +23,14 @@ app = FastAPI(title="Social Media Backend")
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 # Allow CORS for frontend
+origins = [
+    "http://localhost:3000",
+    "https://my-social-media-app-murex.vercel.app",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], 
+    allow_origins=origins,   # ❗ NOT "*"
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
