@@ -1,4 +1,6 @@
-from fastapi import FastAPI, Depends, HTTPException, status, Form, UploadFile, File
+from fastapi import FastAPI, Depends, HTTPException, status, Form, UploadFile, File, Request
+from fastapi.responses import JSONResponse
+import traceback
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
@@ -17,9 +19,26 @@ models.Base.metadata.create_all(bind=engine)
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+
 app = FastAPI(title="Social Media Backend")
 
-# Serve the 'uploads' directory statically
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    # Print the exception to the Railway console
+    traceback.print_exc()
+    
+    # Return it to the frontend with permissive CORS headers to bypass CORS on 500
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error", "trace": str(exc)},
+        headers={
+            "Access-Control-Allow-Origin": request.headers.get("origin") or "*",
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*",
+        },
+    )
+
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 # Allow CORS for frontend
