@@ -71,3 +71,15 @@ class PostResponse(PostBase):
 
     class Config:
         from_attributes = True
+
+class UserProfileResponse(BaseModel):
+    id: int
+    username: str
+    email: str
+    age: Optional[int] = None
+    profile_picture: Optional[str] = None
+    created_at: datetime
+    posts: List[PostResponse] = []
+
+    class Config:
+        from_attributes = True

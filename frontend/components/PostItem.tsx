@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { Heart, MessageCircle, Share2, MoreHorizontal } from 'lucide-react';
 
 export interface CommentType {
@@ -90,15 +91,19 @@ export default function PostItem({ post, currentUser }: PostItemProps) {
             {/* Post Header */}
             <div className="flex items-center justify-between p-4">
                 <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold overflow-hidden">
-                        {post.author.profile_picture ? (
-                            <img src={`${API_URL}${post.author.profile_picture}`} alt={post.author.username} className="w-full h-full object-cover" />
-                        ) : (
-                            post.author.username.charAt(0).toUpperCase()
-                        )}
-                    </div>
+                    <Link href={`/profile/${post.author.username}`}>
+                        <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold overflow-hidden hover:opacity-80 transition-opacity cursor-pointer">
+                            {post.author.profile_picture ? (
+                                <img src={`${API_URL}${post.author.profile_picture}`} alt={post.author.username} className="w-full h-full object-cover" />
+                            ) : (
+                                post.author.username.charAt(0).toUpperCase()
+                            )}
+                        </div>
+                    </Link>
                     <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-gray-100">{post.author.username}</h3>
+                        <Link href={`/profile/${post.author.username}`}>
+                            <h3 className="font-semibold text-gray-900 dark:text-gray-100 hover:underline cursor-pointer">{post.author.username}</h3>
+                        </Link>
                         <div className="flex items-center text-xs text-gray-500">
                             <span>@{post.author.username}</span>
                             <span className="mx-1">•</span>
@@ -178,15 +183,19 @@ export default function PostItem({ post, currentUser }: PostItemProps) {
                     <div className="space-y-3">
                         {comments.map((comment) => (
                             <div key={comment.id} className="flex space-x-2">
-                                <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 shrink-0 flex items-center justify-center text-gray-600 font-bold text-xs mt-1 overflow-hidden">
-                                    {comment.author?.profile_picture ? (
-                                        <img src={`${API_URL}${comment.author.profile_picture}`} alt={comment.author.username} className="w-full h-full object-cover" />
-                                    ) : (
-                                        comment.author?.username?.charAt(0).toUpperCase() || "U"
-                                    )}
-                                </div>
+                                <Link href={`/profile/${comment.author?.username}`}>
+                                    <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 shrink-0 flex items-center justify-center text-gray-600 font-bold text-xs mt-1 overflow-hidden hover:opacity-80 cursor-pointer">
+                                        {comment.author?.profile_picture ? (
+                                            <img src={`${API_URL}${comment.author.profile_picture}`} alt={comment.author.username} className="w-full h-full object-cover" />
+                                        ) : (
+                                            comment.author?.username?.charAt(0).toUpperCase() || "U"
+                                        )}
+                                    </div>
+                                </Link>
                                 <div className="flex-1 bg-white dark:bg-gray-700/50 rounded-2xl rounded-tl-sm px-4 py-2 shadow-sm border border-gray-100 dark:border-gray-700">
-                                    <h4 className="font-semibold text-xs text-gray-900 dark:text-gray-100">{comment.author?.username}</h4>
+                                    <Link href={`/profile/${comment.author?.username}`}>
+                                        <h4 className="font-semibold text-xs text-gray-900 dark:text-gray-100 hover:underline cursor-pointer">{comment.author?.username}</h4>
+                                    </Link>
                                     <p className="text-sm text-gray-700 dark:text-gray-300">{comment.content}</p>
                                 </div>
                             </div>

@@ -128,6 +128,16 @@ def login_user(user: schemas.UserLogin, db: Session = Depends(get_db)):
 def read_users_me(current_user: models.User = Depends(auth.get_current_user)):
     return current_user
 
+@app.get("/users/{username}", response_model=schemas.UserProfileResponse)
+def get_user_profile(username: str, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.username == username).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    # Order the user's posts by newest first
+    user.posts.sort(key=lambda x: x.created_at, reverse=True)
+    return user
+
 @app.post("/posts", response_model=schemas.PostResponse, status_code=status.HTTP_201_CREATED)
 def create_post(
     content: Optional[str] = Form(None),

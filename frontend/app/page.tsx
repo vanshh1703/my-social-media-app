@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import CreatePost from "../components/CreatePost";
 import PostItem, { PostType } from "../components/PostItem";
 import { Bell, Search, Menu, Home as HomeIcon, User as UserIcon } from "lucide-react";
