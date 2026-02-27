@@ -122,13 +122,21 @@ export default function Home() {
               <button className="md:hidden text-gray-500 hover:text-indigo-600 transition-colors">
                 <Menu className="h-6 w-6" />
               </button>
-              <div className="hidden md:flex w-8 h-8 rounded-full bg-indigo-100 items-center justify-center text-indigo-700 font-bold overflow-hidden border-2 border-indigo-200 cursor-pointer">
-                {currentUser?.profile_picture ? (
-                  <img src={`${API_URL}${currentUser.profile_picture}`} alt={currentUser.username} className="w-full h-full object-cover" />
-                ) : (
-                  currentUser?.username?.charAt(0).toUpperCase() || "U"
-                )}
-              </div>
+              {currentUser?.username ? (
+                <Link href={`/profile/${currentUser.username}`}>
+                  <div className="hidden md:flex w-8 h-8 rounded-full bg-indigo-100 items-center justify-center text-indigo-700 font-bold overflow-hidden border-2 border-indigo-200 cursor-pointer hover:ring-2 hover:ring-indigo-400 transition-all">
+                    {currentUser.profile_picture ? (
+                      <img src={`${API_URL}${currentUser.profile_picture}`} alt={currentUser.username} className="w-full h-full object-cover" />
+                    ) : (
+                      currentUser.username.charAt(0).toUpperCase()
+                    )}
+                  </div>
+                </Link>
+              ) : (
+                <div className="hidden md:flex w-8 h-8 rounded-full bg-gray-200 items-center justify-center text-gray-500 font-bold overflow-hidden border-2 border-gray-300">
+                  U
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -141,29 +149,45 @@ export default function Home() {
           {/* Left Sidebar - Hidden on small screens */}
           <div className="hidden md:block md:col-span-4 lg:col-span-3">
             <div className="sticky top-24 bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
-              <div className="flex items-center space-x-3 mb-6 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
-                <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-lg overflow-hidden">
-                  {currentUser?.profile_picture ? (
-                    <img src={`${API_URL}${currentUser.profile_picture}`} alt={currentUser.username} className="w-full h-full object-cover" />
-                  ) : (
-                    currentUser?.username?.charAt(0).toUpperCase() || "U"
-                  )}
+              {currentUser?.username ? (
+                <Link href={`/profile/${currentUser.username}`}>
+                  <div className="flex items-center space-x-3 mb-6 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
+                    <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-lg overflow-hidden">
+                      {currentUser.profile_picture ? (
+                        <img src={`${API_URL}${currentUser.profile_picture}`} alt={currentUser.username} className="w-full h-full object-cover" />
+                      ) : (
+                        currentUser.username.charAt(0).toUpperCase()
+                      )}
+                    </div>
+                    <div>
+                      <h2 className="font-semibold text-gray-900 dark:text-gray-100">{currentUser.username}</h2>
+                      <p className="text-sm text-gray-500">@{currentUser.username}</p>
+                    </div>
+                  </div>
+                </Link>
+              ) : (
+                <div className="flex items-center space-x-3 mb-6 p-2 rounded-lg">
+                  <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold text-lg overflow-hidden">
+                    U
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-gray-900 dark:text-gray-100">Loading...</h2>
+                    <p className="text-sm text-gray-500">@user</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="font-semibold text-gray-900 dark:text-gray-100">{currentUser?.username || "Loading..."}</h2>
-                  <p className="text-sm text-gray-500">@{currentUser?.username || "user"}</p>
-                </div>
-              </div>
+              )}
 
               <nav className="space-y-1">
-                <a href="#" className="flex items-center space-x-3 text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-2 rounded-lg font-medium">
+                <Link href="/" className="flex items-center space-x-3 text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-2 rounded-lg font-medium">
                   <HomeIcon className="h-5 w-5" />
                   <span>Feed</span>
-                </a>
-                <a href="#" className="flex items-center space-x-3 text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700 px-3 py-2 rounded-lg font-medium transition-colors">
-                  <UserIcon className="h-5 w-5" />
-                  <span>Profile</span>
-                </a>
+                </Link>
+                {currentUser?.username && (
+                  <Link href={`/profile/${currentUser.username}`} className="flex items-center space-x-3 text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700 px-3 py-2 rounded-lg font-medium transition-colors">
+                    <UserIcon className="h-5 w-5" />
+                    <span>Profile</span>
+                  </Link>
+                )}
               </nav>
             </div>
           </div>
