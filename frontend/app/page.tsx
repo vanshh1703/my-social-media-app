@@ -7,7 +7,7 @@ import PostItem, { PostType } from "../components/PostItem";
 import { Bell, Search, Menu, Home as HomeIcon, User as UserIcon } from "lucide-react";
 
 // API base URL
-const API_URL = "http://localhost:8000";
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL}`;
 
 export default function Home() {
   const router = useRouter();

@@ -29,7 +29,7 @@ interface PostItemProps {
     currentUser: { id: number, username: string, profile_picture: string | null } | null;
 }
 
-const API_URL = "http://localhost:8000";
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL}`;
 
 export default function PostItem({ post, currentUser }: PostItemProps) {
     const isInitiallyLiked = currentUser ? post.likes.some(like => like.user_id === currentUser.id) : false;

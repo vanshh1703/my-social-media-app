@@ -140,7 +140,7 @@ export default function Register() {
             if (formData.age) payload.append('age', formData.age);
             if (profilePicture) payload.append('profile_picture', profilePicture);
 
-            const res = await fetch('http://localhost:8000/register', {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/register`, {
                 method: 'POST',
                 body: payload,
             });

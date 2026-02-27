@@ -9,7 +9,7 @@ interface CreatePostProps {
 export default function CreatePost({ onPostCreated, currentUser }: CreatePostProps) {
     const [content, setContent] = useState('');
     const [media, setMedia] = useState<File | null>(null);
-    const API_URL = "http://localhost:8000";
+    const API_URL = `${process.env.NEXT_PUBLIC_API_URL}`;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
