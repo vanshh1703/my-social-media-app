@@ -1,10 +1,10 @@
 import os
 import hashlib
+import bcrypt
 from datetime import datetime, timedelta
 from typing import Optional
 
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -25,7 +25,6 @@ SECRET_KEY = os.environ.get(
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__truncate_error=True)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 
@@ -35,20 +34,26 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 def get_password_hash(password: str) -> str:
     """
-    Hash password safely.
+    Hash password safely using raw bcrypt.
     Fixes bcrypt 72-byte limit by pre-hashing with SHA256.
     """
     sha256_hash = hashlib.sha256(password.encode("utf-8")).hexdigest()
-    return pwd_context.hash(sha256_hash)
+    # bcrypt requires bytes
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(sha256_hash.encode("utf-8"), salt)
+    return hashed.decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
-    Verify password safely.
+    Verify password safely using raw bcrypt.
     Must use same SHA256 pre-hash before bcrypt verify.
     """
     sha256_hash = hashlib.sha256(plain_password.encode("utf-8")).hexdigest()
-    return pwd_context.verify(sha256_hash, hashed_password)
+    return bcrypt.checkpw(
+        sha256_hash.encode("utf-8"), 
+        hashed_password.encode("utf-8")
+    )
 
 
 # =========================
