@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, status, Form, UploadFile, F
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
+from typing import List, Optional
 from datetime import timedelta
 import os
 import uuid
@@ -102,3 +103,84 @@ def login_user(user: schemas.UserLogin, db: Session = Depends(get_db)):
 @app.get("/users/me", response_model=schemas.UserResponse)
 def read_users_me(current_user: models.User = Depends(auth.get_current_user)):
     return current_user
+
+@app.post("/posts", response_model=schemas.PostResponse, status_code=status.HTTP_201_CREATED)
+def create_post(
+    content: Optional[str] = Form(None),
+    image: Optional[UploadFile] = File(None),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    image_url = None
+    if image and image.filename:
+        ext = os.path.splitext(image.filename)[1]
+        filename = f"{uuid.uuid4()}{ext}"
+        file_path = os.path.join(UPLOAD_DIR, filename)
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(image.file, buffer)
+        image_url = f"/uploads/{filename}"
+    
+    if not content and not image_url:
+        raise HTTPException(status_code=400, detail="Post must contain text or an image")
+
+    db_post = models.Post(
+        content=content,
+        image_url=image_url,
+        author_id=current_user.id
+    )
+    db.add(db_post)
+    db.commit()
+    db.refresh(db_post)
+    return db_post
+
+@app.get("/posts", response_model=List[schemas.PostResponse])
+def get_posts(db: Session = Depends(get_db)):
+    posts = db.query(models.Post).order_by(models.Post.created_at.desc()).all()
+    return posts
+
+@app.post("/posts/{post_id}/comments", response_model=schemas.CommentResponse)
+def add_comment(
+    post_id: int,
+    comment: schemas.CommentCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    post = db.query(models.Post).filter(models.Post.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+        
+    db_comment = models.Comment(
+        content=comment.content,
+        post_id=post_id,
+        author_id=current_user.id
+    )
+    db.add(db_comment)
+    db.commit()
+    db.refresh(db_comment)
+    return db_comment
+
+@app.post("/posts/{post_id}/like")
+def toggle_like(
+    post_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    post = db.query(models.Post).filter(models.Post.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+        
+    existing_like = db.query(models.Like).filter(
+        models.Like.post_id == post_id,
+        models.Like.user_id == current_user.id
+    ).first()
+    
+    if existing_like:
+        db.delete(existing_like)
+        db.commit()
+        return {"message": "Like removed", "liked": False}
+    else:
+        new_like = models.Like(post_id=post_id, user_id=current_user.id)
+        db.add(new_like)
+        db.commit()
+        return {"message": "Like added", "liked": True}
+

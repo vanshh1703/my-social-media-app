@@ -2,56 +2,87 @@ import React, { useState } from 'react';
 import { Heart, MessageCircle, Share2, MoreHorizontal } from 'lucide-react';
 
 export interface CommentType {
-    id: string;
-    author: string;
+    id: number;
+    author: { username: string, profile_picture: string | null };
     content: string;
     createdAt: string;
 }
 
 export interface PostType {
-    id: string;
+    id: number;
     author: {
-        name: string;
-        avatar: string;
-        handle: string;
+        id: number;
+        username: string;
+        profile_picture: string | null;
     };
     content: string;
+    image_url?: string;
     mediaUrl?: string;
     mediaType?: 'image' | 'video';
-    likes: number;
+    likes: { user_id: number }[];
     comments: CommentType[];
-    createdAt: string;
+    created_at: string;
 }
 
 interface PostItemProps {
     post: PostType;
+    currentUser: { id: number, username: string, profile_picture: string | null } | null;
 }
 
-export default function PostItem({ post }: PostItemProps) {
-    const [isLiked, setIsLiked] = useState(false);
-    const [likesCount, setLikesCount] = useState(post.likes);
+const API_URL = "http://localhost:8000";
+
+export default function PostItem({ post, currentUser }: PostItemProps) {
+    const isInitiallyLiked = currentUser ? post.likes.some(like => like.user_id === currentUser.id) : false;
+    const [isLiked, setIsLiked] = useState(isInitiallyLiked);
+    const [likesCount, setLikesCount] = useState(post.likes.length);
     const [showComments, setShowComments] = useState(false);
     const [comments, setComments] = useState<CommentType[]>(post.comments);
     const [newComment, setNewComment] = useState('');
 
-    const handleLike = () => {
-        setIsLiked(!isLiked);
-        setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
+    const handleLike = async () => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        try {
+            const res = await fetch(`${API_URL}/posts/${post.id}/like`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setIsLiked(data.liked);
+                setLikesCount(prev => data.liked ? prev + 1 : prev - 1);
+            }
+        } catch (error) {
+            console.error("Failed to toggle like", error);
+        }
     };
 
-    const handleCommentSubmit = (e: React.FormEvent) => {
+    const handleCommentSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newComment.trim()) return;
 
-        const commentItem: CommentType = {
-            id: Date.now().toString(),
-            author: 'Current User',
-            content: newComment,
-            createdAt: 'Just now'
-        };
+        const token = localStorage.getItem('token');
+        if (!token) return;
 
-        setComments([...comments, commentItem]);
-        setNewComment('');
+        try {
+            const res = await fetch(`${API_URL}/posts/${post.id}/comments`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ content: newComment })
+            });
+
+            if (res.ok) {
+                const commentItem = await res.json();
+                setComments([...comments, commentItem]);
+                setNewComment('');
+            }
+        } catch (error) {
+            console.error("Failed to add comment", error);
+        }
     };
 
     return (
@@ -60,18 +91,18 @@ export default function PostItem({ post }: PostItemProps) {
             <div className="flex items-center justify-between p-4">
                 <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold overflow-hidden">
-                        {post.author.avatar ? (
-                            <img src={post.author.avatar} alt={post.author.name} className="w-full h-full object-cover" />
+                        {post.author.profile_picture ? (
+                            <img src={`${API_URL}${post.author.profile_picture}`} alt={post.author.username} className="w-full h-full object-cover" />
                         ) : (
-                            post.author.name.charAt(0)
+                            post.author.username.charAt(0).toUpperCase()
                         )}
                     </div>
                     <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-gray-100">{post.author.name}</h3>
+                        <h3 className="font-semibold text-gray-900 dark:text-gray-100">{post.author.username}</h3>
                         <div className="flex items-center text-xs text-gray-500">
-                            <span>@{post.author.handle}</span>
+                            <span>@{post.author.username}</span>
                             <span className="mx-1">•</span>
-                            <span>{post.createdAt}</span>
+                            <span>{new Date(post.created_at).toLocaleDateString()}</span>
                         </div>
                     </div>
                 </div>
@@ -86,13 +117,9 @@ export default function PostItem({ post }: PostItemProps) {
             </div>
 
             {/* Media Content */}
-            {post.mediaUrl && (
+            {post.image_url && (
                 <div className="bg-gray-100 dark:bg-gray-900 border-y border-gray-100 dark:border-gray-700">
-                    {post.mediaType === 'video' ? (
-                        <video src={post.mediaUrl} controls className="w-full max-h-[500px] object-contain" />
-                    ) : (
-                        <img src={post.mediaUrl} alt="Post media" className="w-full max-h-[500px] object-cover" />
-                    )}
+                    <img src={`${API_URL}${post.image_url}`} alt="Post media" className="w-full max-h-[500px] object-cover" />
                 </div>
             )}
 
@@ -132,8 +159,12 @@ export default function PostItem({ post }: PostItemProps) {
             {showComments && (
                 <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-700">
                     <form onSubmit={handleCommentSubmit} className="flex space-x-2 mb-4">
-                        <div className="w-8 h-8 rounded-full bg-indigo-100 shrink-0 flex items-center justify-center text-indigo-600 font-bold text-sm">
-                            U
+                        <div className="w-8 h-8 rounded-full bg-indigo-100 shrink-0 flex items-center justify-center text-indigo-600 font-bold text-sm overflow-hidden">
+                            {currentUser?.profile_picture ? (
+                                <img src={`${API_URL}${currentUser.profile_picture}`} alt={currentUser.username} className="w-full h-full object-cover" />
+                            ) : (
+                                currentUser?.username?.charAt(0).toUpperCase() || "U"
+                            )}
                         </div>
                         <input
                             type="text"
@@ -147,11 +178,15 @@ export default function PostItem({ post }: PostItemProps) {
                     <div className="space-y-3">
                         {comments.map((comment) => (
                             <div key={comment.id} className="flex space-x-2">
-                                <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 shrink-0 flex items-center justify-center text-gray-600 font-bold text-xs mt-1">
-                                    {comment.author.charAt(0)}
+                                <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 shrink-0 flex items-center justify-center text-gray-600 font-bold text-xs mt-1 overflow-hidden">
+                                    {comment.author?.profile_picture ? (
+                                        <img src={`${API_URL}${comment.author.profile_picture}`} alt={comment.author.username} className="w-full h-full object-cover" />
+                                    ) : (
+                                        comment.author?.username?.charAt(0).toUpperCase() || "U"
+                                    )}
                                 </div>
                                 <div className="flex-1 bg-white dark:bg-gray-700/50 rounded-2xl rounded-tl-sm px-4 py-2 shadow-sm border border-gray-100 dark:border-gray-700">
-                                    <h4 className="font-semibold text-xs text-gray-900 dark:text-gray-100">{comment.author}</h4>
+                                    <h4 className="font-semibold text-xs text-gray-900 dark:text-gray-100">{comment.author?.username}</h4>
                                     <p className="text-sm text-gray-700 dark:text-gray-300">{comment.content}</p>
                                 </div>
                             </div>

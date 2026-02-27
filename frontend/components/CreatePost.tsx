@@ -3,11 +3,13 @@ import { Image as ImageIcon, Video, Send } from 'lucide-react';
 
 interface CreatePostProps {
     onPostCreated: (content: string, mediaFile?: File | null) => void;
+    currentUser: { id: number, username: string, profile_picture: string | null } | null;
 }
 
-export default function CreatePost({ onPostCreated }: CreatePostProps) {
+export default function CreatePost({ onPostCreated, currentUser }: CreatePostProps) {
     const [content, setContent] = useState('');
     const [media, setMedia] = useState<File | null>(null);
+    const API_URL = "http://localhost:8000";
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -27,8 +29,12 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 mb-6 border border-gray-100 dark:border-gray-700">
             <form onSubmit={handleSubmit}>
                 <div className="flex space-x-4 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900 shrink-0 flex items-center justify-center text-indigo-600 dark:text-indigo-300 font-bold">
-                        U
+                    <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900 shrink-0 flex items-center justify-center text-indigo-600 dark:text-indigo-300 font-bold overflow-hidden">
+                        {currentUser?.profile_picture ? (
+                            <img src={`${API_URL}${currentUser.profile_picture}`} alt={currentUser.username} className="w-full h-full object-cover" />
+                        ) : (
+                            currentUser?.username?.charAt(0).toUpperCase() || "U"
+                        )}
                     </div>
                     <textarea
                         className="w-full bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 rounded-lg p-3 outline-none resize-none focus:ring-2 focus:ring-indigo-500 transition-all border border-transparent focus:border-indigo-500"

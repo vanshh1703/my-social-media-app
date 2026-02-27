@@ -6,46 +6,40 @@ import CreatePost from "../components/CreatePost";
 import PostItem, { PostType } from "../components/PostItem";
 import { Bell, Search, Menu, Home as HomeIcon, User as UserIcon } from "lucide-react";
 
-const INITIAL_POSTS: PostType[] = [
-  {
-    id: "1",
-    author: {
-      name: "Alex Johnson",
-      avatar: "https://i.pravatar.cc/150?u=a042581f4e29026024d",
-      handle: "alexj"
-    },
-    content: "Just finished building my new portfolio site! What do you guys think? 🚀",
-    likes: 42,
-    comments: [
-      {
-        id: "c1",
-        author: "Sarah Smith",
-        content: "Looks absolutely amazing! Love the design.",
-        createdAt: "2h ago"
-      }
-    ],
-    createdAt: "3h ago"
-  },
-  {
-    id: "2",
-    author: {
-      name: "Michael Chen",
-      avatar: "https://i.pravatar.cc/150?u=a042581f4e29026704d",
-      handle: "mchen_dev"
-    },
-    content: "Beautiful sunset at the beach today. Taking a break from coding! 🌅",
-    mediaUrl: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
-    mediaType: "image",
-    likes: 128,
-    comments: [],
-    createdAt: "5h ago"
-  }
-];
+// API base URL
+const API_URL = "http://localhost:8000";
 
 export default function Home() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [posts, setPosts] = useState<PostType[]>(INITIAL_POSTS);
+  const [posts, setPosts] = useState<PostType[]>([]);
+  const [currentUser, setCurrentUser] = useState<{ id: number, username: string, profile_picture: string | null } | null>(null);
+
+  const fetchUser = async (token: string) => {
+    try {
+      const res = await fetch(`${API_URL}/users/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCurrentUser(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch user", error);
+    }
+  };
+
+  const fetchPosts = async () => {
+    try {
+      const res = await fetch(`${API_URL}/posts`);
+      if (res.ok) {
+        const data = await res.json();
+        setPosts(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch posts", error);
+    }
+  };
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -53,37 +47,39 @@ export default function Home() {
       router.push('/Login');
     } else {
       setIsAuthenticated(true);
+      fetchUser(token);
+      fetchPosts();
     }
   }, [router]);
 
   if (!isAuthenticated) return null; // Avoid flashing the home page before redirect
 
+  const handlePostCreated = async (content: string, mediaFile?: File | null) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
 
-  const handlePostCreated = (content: string, mediaFile?: File | null) => {
-    let mediaUrl = undefined;
-    let mediaType: 'image' | 'video' | undefined = undefined;
+    try {
+      const formData = new FormData();
+      if (content) formData.append('content', content);
+      if (mediaFile) formData.append('image', mediaFile);
 
-    if (mediaFile) {
-      mediaUrl = URL.createObjectURL(mediaFile);
-      mediaType = mediaFile.type.startsWith('video/') ? 'video' : 'image';
+      const res = await fetch(`${API_URL}/posts`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (res.ok) {
+        const newPost = await res.json();
+        setPosts([newPost, ...posts]);
+      } else {
+        console.error("Failed to create post", await res.text());
+      }
+    } catch (error) {
+      console.error("Error creating post", error);
     }
-
-    const newPost: PostType = {
-      id: Date.now().toString(),
-      author: {
-        name: "Current User",
-        avatar: "",
-        handle: "currentuser"
-      },
-      content,
-      mediaUrl,
-      mediaType,
-      likes: 0,
-      comments: [],
-      createdAt: "Just now"
-    };
-
-    setPosts([newPost, ...posts]);
   };
 
   return (
@@ -126,7 +122,11 @@ export default function Home() {
                 <Menu className="h-6 w-6" />
               </button>
               <div className="hidden md:flex w-8 h-8 rounded-full bg-indigo-100 items-center justify-center text-indigo-700 font-bold overflow-hidden border-2 border-indigo-200 cursor-pointer">
-                U
+                {currentUser?.profile_picture ? (
+                  <img src={`${API_URL}${currentUser.profile_picture}`} alt={currentUser.username} className="w-full h-full object-cover" />
+                ) : (
+                  currentUser?.username?.charAt(0).toUpperCase() || "U"
+                )}
               </div>
             </div>
           </div>
@@ -141,12 +141,16 @@ export default function Home() {
           <div className="hidden md:block md:col-span-4 lg:col-span-3">
             <div className="sticky top-24 bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
               <div className="flex items-center space-x-3 mb-6 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
-                <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-lg">
-                  U
+                <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-lg overflow-hidden">
+                  {currentUser?.profile_picture ? (
+                    <img src={`${API_URL}${currentUser.profile_picture}`} alt={currentUser.username} className="w-full h-full object-cover" />
+                  ) : (
+                    currentUser?.username?.charAt(0).toUpperCase() || "U"
+                  )}
                 </div>
                 <div>
-                  <h2 className="font-semibold text-gray-900 dark:text-gray-100">Current User</h2>
-                  <p className="text-sm text-gray-500">@currentuser</p>
+                  <h2 className="font-semibold text-gray-900 dark:text-gray-100">{currentUser?.username || "Loading..."}</h2>
+                  <p className="text-sm text-gray-500">@{currentUser?.username || "user"}</p>
                 </div>
               </div>
 
@@ -165,11 +169,11 @@ export default function Home() {
 
           {/* Center Feed */}
           <div className="col-span-1 md:col-span-8 lg:col-span-6 w-full">
-            <CreatePost onPostCreated={handlePostCreated} />
+            <CreatePost onPostCreated={handlePostCreated} currentUser={currentUser} />
 
             <div className="space-y-0">
               {posts.map(post => (
-                <PostItem key={post.id} post={post} />
+                <PostItem key={post.id} post={post} currentUser={currentUser} />
               ))}
 
               {posts.length === 0 && (
