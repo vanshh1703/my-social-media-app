@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import CreatePost from "../components/CreatePost";
 import PostItem, { PostType } from "../components/PostItem";
-import { Bell, Search, Menu, Home as HomeIcon, User as UserIcon } from "lucide-react";
+import { Bell, Search, Menu, Home as HomeIcon, User as UserIcon, LogOut } from "lucide-react";
 
 // API base URL
 const API_URL = `${process.env.NEXT_PUBLIC_API_URL}`;
@@ -83,6 +83,11 @@ export default function Home() {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    router.push('/Login');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans selection:bg-indigo-100 selection:text-indigo-900">
       {/* Navigation */}
@@ -118,6 +123,9 @@ export default function Home() {
               <button className="text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors relative">
                 <Bell className="h-6 w-6" />
                 <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-800"></span>
+              </button>
+              <button onClick={handleLogout} className="text-gray-500 hover:text-red-600 dark:hover:text-red-400 transition-colors" title="Logout">
+                <LogOut className="h-6 w-6" />
               </button>
               <button className="md:hidden text-gray-500 hover:text-indigo-600 transition-colors">
                 <Menu className="h-6 w-6" />
@@ -188,6 +196,13 @@ export default function Home() {
                     <span>Profile</span>
                   </Link>
                 )}
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center space-x-3 text-gray-600 hover:bg-red-50 hover:text-red-600 dark:text-gray-300 dark:hover:bg-red-900/30 dark:hover:text-red-400 px-3 py-2 rounded-lg font-medium transition-colors"
+                >
+                  <LogOut className="h-5 w-5" />
+                  <span>Logout</span>
+                </button>
               </nav>
             </div>
           </div>
